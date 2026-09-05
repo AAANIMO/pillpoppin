@@ -1679,14 +1679,48 @@ X.B(E,Y);return E}return J}())
   }
   #splash.hide{ opacity:0; pointer-events:none; }
   body.splash-done #splash{ display:none; }
-  #splash::before{
-    content:''; position:absolute; inset:0; pointer-events:none;
+  /* Sfondo — una glitch art di pasticca alla volta, scurita, che cambia con un flash */
+  .splash-bg{
+    position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+    opacity:0; animation:splashBgIn 1200ms ease 60ms both;
+  }
+  .sb-frame{
+    position:absolute; inset:-2%; background-size:cover; background-position:center;
+    filter:saturate(0.92) contrast(1.04); transform:scale(1.02); will-change:transform,filter;
+  }
+  .sb-frame.go{ animation:sbFrame 420ms cubic-bezier(.2,.7,.2,1); }
+  /* Velo scuro + vignetta: centro molto scuro (testo leggibile), bordi appena accesi */
+  .sb-veil{
+    position:absolute; inset:0; z-index:1;
     background:
-      radial-gradient(60% 45% at 50% 34%, rgba(255,45,246,0.10), transparent 70%),
-      radial-gradient(55% 45% at 50% 66%, rgba(0,229,255,0.08), transparent 70%);
+      radial-gradient(120% 90% at 50% 46%, rgba(8,8,10,0.93) 0%, rgba(8,8,10,0.85) 34%, rgba(8,8,10,0.72) 70%, rgba(8,8,10,0.64) 100%),
+      linear-gradient(180deg, rgba(8,8,10,0.55) 0%, rgba(8,8,10,0.28) 30%, rgba(8,8,10,0.28) 70%, rgba(8,8,10,0.72) 100%);
+  }
+  .sb-flash{ position:absolute; inset:0; z-index:2; opacity:0; mix-blend-mode:screen; }
+  .sb-flash.go{ animation:sbFlash 340ms steps(1,end); }
+  @keyframes sbFrame{
+    0%  { transform:translateX(0) scale(1.02); filter:brightness(1) saturate(.92); }
+    9%  { transform:translateX(-10px) scale(1.035); filter:brightness(1.7) saturate(1.25) hue-rotate(10deg); }
+    18% { transform:translateX(8px) scale(1.03); filter:brightness(1.2) saturate(1.1); }
+    27% { transform:translateX(-3px) scale(1.025); }
+    100%{ transform:translateX(0) scale(1.02); filter:brightness(1) saturate(.92); }
+  }
+  @keyframes sbFlash{
+    0%  { opacity:0; background:#F5F5F7; }
+    8%  { opacity:.6; background:#F5F5F7; }
+    24% { opacity:.32; background:#FF2DF6; }
+    40% { opacity:.28; background:#00E5FF; }
+    62% { opacity:.12; background:#F5F5F7; }
+    100%{ opacity:0; background:#F5F5F7; }
+  }
+  #splash::before{
+    content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(60% 45% at 50% 34%, rgba(255,45,246,0.08), transparent 70%),
+      radial-gradient(55% 45% at 50% 66%, rgba(0,229,255,0.06), transparent 70%);
   }
   .splash-inner{
-    position:relative; display:flex; flex-direction:column; align-items:center;
+    position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;
     text-align:center; padding:24px;
   }
   .splash-crest{
@@ -1703,7 +1737,12 @@ X.B(E,Y);return E}return J}())
     text-shadow:-2px 0 rgba(255,45,246,0.85), 2px 0 rgba(0,229,255,0.85);
     opacity:0; animation:splashIn 640ms ease 900ms both;
   }
+  .splash-title{ display:flex; align-items:center; justify-content:center; }
   .splash-title .dot{ color:#FF2DF6; text-shadow:none; }
+  .title-pill{
+    height:0.88em; width:auto; margin-right:.16em; transform:translateY(0.02em) rotate(8deg);
+    filter:drop-shadow(0 3px 10px rgba(255,45,246,0.35));
+  }
   .splash-sub{
     margin:14px 0 0; font-family:'Space Mono',monospace; font-size:11px;
     letter-spacing:3px; text-transform:uppercase; color:#8A8A92;
@@ -1743,6 +1782,7 @@ X.B(E,Y);return E}return J}())
   .splash-social a:hover{ color:#FF2DF6; }
   .splash-social a .ig{ color:#6E6E78; }
   @keyframes splashIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+  @keyframes splashBgIn{ from{ opacity:0;} to{ opacity:1;} }
   @keyframes splashCrestIn{ from{ opacity:0; transform:scale(.9);} to{ opacity:1; transform:scale(1);} }
   @media (prefers-reduced-motion:reduce){
     .splash-crest,.splash-title,.splash-sub,.splash-actions,.splash-help,.splash-social{
@@ -1755,9 +1795,14 @@ X.B(E,Y);return E}return J}())
 
 <!-- ============ SPLASH (app desktop) ============ -->
 <div id="splash">
+  <div class="splash-bg" aria-hidden="true">
+    <div class="sb-frame" id="sbFrame"></div>
+    <div class="sb-veil"></div>
+    <div class="sb-flash" id="sbFlash"></div>
+  </div>
   <div class="splash-inner">
     <div class="splash-crest" role="img" aria-label="animosity crest"></div>
-    <h1 class="splash-title">pillpoppin<span class="dot">.</span></h1>
+    <h1 class="splash-title"><img class="title-pill" src="assets/icon-source.png" alt="" aria-hidden="true">pillpoppin<span class="dot">.</span></h1>
     <p class="splash-sub">an <b>animosity</b> project featuring <b>pasticca</b></p>
     <div class="splash-actions">
       <button id="splashStart" class="splash-btn primary">start pillpoppin&nbsp;»</button>
@@ -3300,11 +3345,32 @@ document.addEventListener('DOMContentLoaded', init);
 <script>
 (function () {
   function openExternal(url) { if (url) window.open(url, '_blank', 'noopener'); }
+  var bgTimer = null;
   function dismissSplash() {
     var s = document.getElementById('splash');
     if (!s) return;
+    if (bgTimer) { clearInterval(bgTimer); bgTimer = null; }
     s.classList.add('hide');
     setTimeout(function () { document.body.classList.add('splash-done'); }, 480);
+  }
+  // Sfondo: una glitch art di pasticca alla volta, cambio con flash RGB.
+  function startBg() {
+    var imgs = ['assets/glitch-02.webp','assets/glitch-04.webp','assets/glitch-03.webp','assets/glitch-01.webp'];
+    var frame = document.getElementById('sbFrame');
+    var flash = document.getElementById('sbFlash');
+    if (!frame) return;
+    imgs.forEach(function (src) { var im = new Image(); im.src = src; }); // preload
+    var i = 0;
+    frame.style.backgroundImage = "url('" + imgs[0] + "')";
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return; // niente ciclo/flash se l'utente preferisce meno movimento
+    function tick() {
+      i = (i + 1) % imgs.length;
+      if (flash) { flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go'); }
+      frame.classList.remove('go'); void frame.offsetWidth; frame.classList.add('go');
+      setTimeout(function () { frame.style.backgroundImage = "url('" + imgs[i] + "')"; }, 95);
+    }
+    bgTimer = setInterval(tick, 2600);
   }
   function wire() {
     var start = document.getElementById('splashStart');
@@ -3319,8 +3385,9 @@ document.addEventListener('DOMContentLoaded', init);
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dismissSplash(); }
     });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
-  else wire();
+  function boot() { wire(); startBg(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
 </script>
 
