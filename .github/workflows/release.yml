@@ -1,0 +1,55 @@
+name: Build & Release
+
+# Builds the macOS .dmg and Windows .exe on GitHub and attaches them to the
+# Release when a v* tag is pushed. Can also be launched manually from Actions.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # required to create/update the Release
+
+jobs:
+  build-mac:
+    runs-on: macos-latest   # Apple Silicon runner: builds arm64 + x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build & publish .dmg
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # unsigned build: do not attempt Apple code-signing
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac --publish always
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build & publish .exe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always
