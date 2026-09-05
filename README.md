@@ -6,6 +6,14 @@ Fully offline, self-contained, no account.
 
 *An animosity project featuring pasticca.*
 
+## Try it online
+
+No install needed — run it straight in your browser at
+**[animosity.it/pillpoppin.html](https://animosity.it/pillpoppin.html)**.
+
+The desktop app below is the same tool, packaged for macOS and Windows so it runs
+fully offline as a native window.
+
 ## Download
 
 Grab the latest build from the [Releases](https://github.com/AAANIMO/pillpoppin/releases/latest) page:
